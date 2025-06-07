@@ -74,6 +74,13 @@ const inviteRoutes = require('./routes/inviteRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const gameRoutes = require('./routes/gameRoutes');
 
+//PATH LOGGING
+app.use(async (req, res, next) => {
+    const ip = req.headers['x-forwarded-for'] || (req.ip.includes(':') ? req.ip.split(':').pop() : req.ip);
+    console.log(`[${req.method}] Path: ${req.path} > IP: ${ip}`);
+    next();
+});
+
 // Routes
 app.use('/', authRoutes);
 app.use('/', inviteRoutes);
