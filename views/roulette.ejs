@@ -179,9 +179,10 @@
             });
 
             const targetAngle = numberToAngle.get(result.winningNumber);
-            const randomOffset = (Math.random() - 0.5) * anglePerSegment * 0.8;
+            // const randomOffset = (Math.random() - 0.5) * anglePerSegment * 0.8; // Entfernen oder auskommentieren
             const fullRotations = 5 * 360;
-            currentRotation += fullRotations - (currentRotation % 360) + 360 - targetAngle + randomOffset;
+            // currentRotation += fullRotations - (currentRotation % 360) + 360 - targetAngle + randomOffset; // Alte Berechnung
+            currentRotation += fullRotations - (currentRotation % 360) + 360 - targetAngle - (anglePerSegment / 2); // Angepasste Berechnung für die Mitte des Segments
             
             wheel.style.transform = `rotate(${currentRotation}deg)`;
 
