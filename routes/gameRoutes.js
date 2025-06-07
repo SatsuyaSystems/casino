@@ -4,6 +4,8 @@ const { ensureAuthenticated } = require('../middleware/authMiddleware');
 const GameController = require('../controllers/gameController');
 
 // Roulette game route
+
+router.get('/games', ensureAuthenticated, GameController.showGames);
 router.get('/roulette', ensureAuthenticated, GameController.showRoulette);
 router.post('/roulette/bet', ensureAuthenticated, GameController.placeBet);
 

@@ -1,5 +1,11 @@
 const User = require('../models/User');
 
+exports.showGames = async (req, res) => {
+    res.render('games', {
+        user: req.user,
+    });
+};
+
 exports.showRoulette = (req, res) => {
     // Rendert die neue EJS-Datei
     res.render('roulette', { 
