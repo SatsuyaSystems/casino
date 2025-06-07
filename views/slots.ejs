@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Slot Machine - Satsuya Casino</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .slot-machine {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            background-color: #1a1919;
+            border-radius: 10px;
+        }
+        .reels {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 2rem;
+            border: 5px solid #5a0a66;
+            padding: 20px;
+            background: #000;
+        }
+        .reel {
+            width: 100px;
+            height: 100px;
+            background-color: white;
+            border: 2px solid #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3rem;
+            overflow: hidden; /* Für die Animation */
+        }
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        #spin-btn {
+            padding: 1rem 2rem;
+            font-size: 1.5rem;
+        }
+         #game-message {
+            margin-top: 1rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+            min-height: 25px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Slot Machine</h1>
+        <p>Guthaben: $<span id="balance"><%= user.balance %></span></p>
+    </header>
+     <nav>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/games">Spiele</a>
+        <a href="/logout">Logout</a>
+    </nav>
+
+    <main>
+        <div class="slot-machine">
+            <div class="reels">
+                <div class="reel" id="reel1">❓</div>
+                <div class="reel" id="reel2">❓</div>
+                <div class="reel" id="reel3">❓</div>
+            </div>
+
+            <div id="game-message">Setze einen Betrag und drücke auf "Spin"!</div>
+
+            <div class="controls">
+                <input type="number" id="bet-amount" value="10" min="1" class="form-group input">
+                <button id="spin-btn">Spin!</button>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/slots-client.js"></script>
+</body>
+</html>

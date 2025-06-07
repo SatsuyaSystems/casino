@@ -249,3 +249,74 @@ exports.playerAction = async (req, res) => {
         res.status(500).json({ success: false, error: 'Aktion fehlgeschlagen.' });
     }
 };
+
+// Zeigt die Slot-Machine-Seite an
+exports.showSlots = (req, res) => {
+    res.render('slots', { 
+        user: req.user,
+    });
+};
+
+// Verarbeitet einen "Spin"
+exports.playSlots = async (req, res) => {
+    const symbols = ['🍒', '🍋', '🍊', '🔔', '🍉', '⭐', '💎'];
+    const payoutTable = {
+        '🍒🍒🍒': 10,
+        '🍋🍋🍋': 15,
+        '🍊🍊🍊': 20,
+        '🔔🔔🔔': 50,
+        '🍉🍉🍉': 75,
+        '⭐⭐⭐': 100,
+        '💎💎💎': 250,
+    };
+
+    try {
+        const { amount } = req.body;
+        const betAmount = parseInt(amount);
+        const user = await User.findById(req.user._id);
+
+        if (betAmount > user.balance) {
+            return res.status(400).json({ success: false, error: 'Unzureichendes Guthaben' });
+        }
+        if (betAmount <= 0) {
+            return res.status(400).json({ success: false, error: 'Ungültiger Einsatz' });
+        }
+
+        // Einsatz vom Guthaben abziehen
+        user.balance -= betAmount;
+
+        // Walzen "drehen" (zufällige Symbole generieren)
+        const reel1 = symbols[Math.floor(Math.random() * symbols.length)];
+        const reel2 = symbols[Math.floor(Math.random() * symbols.length)];
+        const reel3 = symbols[Math.floor(Math.random() * symbols.length)];
+        
+        const result = [reel1, reel2, reel3];
+        const resultKey = result.join('');
+        
+        let win = false;
+        let payout = 0;
+        let message = 'Verloren. Versuch es erneut!';
+
+        // Gewinn prüfen
+        if (payoutTable[resultKey]) {
+            win = true;
+            payout = betAmount * payoutTable[resultKey];
+            user.balance += payout;
+            message = `Gewonnen! Du erhältst $${payout}!`;
+        }
+
+        await user.save();
+
+        res.json({
+            success: true,
+            reels: result,
+            win,
+            payout,
+            message,
+            newBalance: user.balance
+        });
+
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Spin fehlgeschlagen.' });
+    }
+};
