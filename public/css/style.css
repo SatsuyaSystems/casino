@@ -1,0 +1,186 @@
+/* Base Styles */
+body {
+    font-family: 'Arial', sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    background-color: #1a1919;
+    color: #e6e6e6;
+}
+
+header {
+    background-color: #792074;
+    color: white;
+    padding: 1rem;
+    text-align: center;
+}
+
+nav {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1rem 0;
+}
+
+nav a {
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+nav a:hover {
+    background-color: #600f58;
+}
+
+main {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+footer {
+    background-color: #3e1639;
+    color: white;
+    text-align: center;
+    padding: 1rem;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+}
+
+/* Auth Pages */
+.auth-container {
+    max-width: 400px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: #16213e;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #0f3460;
+    border-radius: 4px;
+    background-color: #1a1a2e;
+    color: white;
+}
+
+button {
+    background-color: #5a0a66;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #b70b9e;
+}
+
+.error {
+    color: #ff6b6b;
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+    background-color: rgba(255, 107, 107, 0.1);
+    border-radius: 4px;
+}
+
+/* Flash Messages */
+.flash-error {
+    background-color: rgba(255, 107, 107, 0.2);
+    color: #ff6b6b;
+    padding: 1rem;
+    margin: 1rem auto;
+    max-width: 1200px;
+    border-left: 4px solid #ff6b6b;
+    border-radius: 4px;
+}
+
+.flash-success {
+    background-color: rgba(76, 175, 80, 0.2);
+    color: #4CAF50;
+    padding: 1rem;
+    margin: 1rem auto;
+    max-width: 1200px;
+    border-left: 4px solid #4CAF50;
+    border-radius: 4px;
+}
+
+/* Homepage Styles */
+.hero {
+    text-align: center;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+}
+
+.features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.feature {
+    background-color: #16213e;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Dashboard Styles */
+.user-info {
+    background-color: #3a163e;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.actions {
+    background-color: #3a163e;
+    padding: 1.5rem;
+    border-radius: 8px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+/* Invites Page Styles */
+.invite-list table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+}
+
+.invite-list th, 
+.invite-list td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #0f3460;
+}
+
+.invite-list th {
+    background-color: #0f3460;
+}
+
+.invite-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}

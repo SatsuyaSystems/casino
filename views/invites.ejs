@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Invites - Satsuya Casino</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header>
+        <h1>My Invites</h1>
+        <nav>
+            <a href="/dashboard">Home</a>
+            <a href="/invites">My Invites</a>
+            <a href="/roulette">Roulette</a>
+            <a href="/logout">Logout</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="invite-list">
+            <h2>Your Invite Codes</h2>
+            
+            <% if (invites.length === 0) { %>
+                <p>You don't have any invites yet.</p>
+            <% } else { %>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Status</th>
+                            <th>Used By</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% invites.forEach(invite => { %>
+                            <tr>
+                                <td><%= invite.code %></td>
+                                <td><%= invite.active ? 'Useable' : 'Used' %></td>
+                                <td><%= invite.usedBy %></td>
+                                <td><%= invite.createdAt.toLocaleDateString() %></td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            <% } %>
+
+            <div class="invite-actions">
+                <form action="/invites/generate" method="POST">
+                    <button type="submit">Generate New Invite</button>
+                </form>
+                <!--<form action="/invites/buy" method="POST">
+                    <button type="submit">Buy Additional Invite ($10)</button>
+                </form>-->
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Satsuya Casino. All rights reserved.</p>
+    </footer>
+</body>
+</html>

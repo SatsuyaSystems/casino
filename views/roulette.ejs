@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roulette - Satsuya Casino</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        /* ===== THIS IS THE KEY FIX ===== */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #1a1a2e;
+            color: white;
+            margin: 0; /* Add a standard reset */
+            font-family: sans-serif; /* Add a default font */
+        }
+        /* ================================ */
+
+        .roulette-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+            margin: 2rem auto;
+            padding: 0 1rem; /* Add padding for small screens */
+            max-width: 1200px;
+        }
+
+        .wheel-container {
+            position: relative;
+            width: 90vw;
+            max-width: 450px;
+            aspect-ratio: 1 / 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 30px solid #f1c40f;
+            z-index: 20;
+        }
+
+        .roulette-wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            position: relative;
+            border: 10px solid #792074;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            transition: transform 6s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+        
+        .wheel-number {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 30px;
+            height: 30px;
+            margin-left: -15px;
+            margin-top: -15px;
+            line-height: 30px;
+            
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .wheel-center {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            background: #f1c40f;
+            border-radius: 50%;
+            border: 5px solid #792074;
+            z-index: 5;
+        }
+        
+        .betting-panel {
+            width: 100%;
+            max-width: 600px;
+            background-color: #16213e;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .number-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            margin-bottom: 1rem;
+        }
+        
+        .number-btn[data-number="0"] {
+            grid-column: 1 / -1;
+            background-color: #0a5c36;
+        }
+         .number-btn[data-number="0"]:hover, .number-btn[data-number="0"].selected {
+            background-color: #1a7c4a;
+        }
+        
+        .number-btn {
+            padding: 0.75rem 0.5rem;
+            text-align: center;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        .number-btn:hover {
+            transform: scale(1.05);
+        }
+        .number-btn.selected {
+             background-color: #b70b9e;
+             transform: scale(1.1);
+             box-shadow: 0 0 10px #b70b9e;
+        }
+
+        .bet-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .bet-amount {
+            padding: 0.5rem;
+            border: 1px solid #792074;
+            border-radius: 4px;
+            background-color: #1a1a2e;
+            color: white;
+            width: 100px;
+            font-size: 1rem;
+        }
+
+        #spin-btn {
+            padding: 0.75rem 1.5rem;
+            background-color: #f1c40f;
+            color: #16213e;
+            font-weight: bold;
+            font-size: 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #spin-btn:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
+        #spin-btn:not(:disabled):hover {
+            background-color: #ffde59;
+        }
+
+        #result {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            display: none;
+        }
+
+        .win {
+            display: block;
+            background-color: rgba(76, 175, 80, 0.3);
+            color: #4CAF50;
+            border: 1px solid #4CAF50;
+        }
+
+        .lose {
+            display: block;
+            background-color: rgba(255, 107, 107, 0.3);
+            color: #ff6b6b;
+            border: 1px solid #ff6b6b;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Satsuya Roulette</h1>
+        <nav>
+            <a href="/dashboard">Home</a>
+            <a href="/invites">My Invites</a>
+            <a href="/roulette">Roulette</a>
+            <a href="/logout">Logout</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="roulette-container">
+            <div class="wheel-container">
+                <div class="pointer"></div>
+                <div class="roulette-wheel" id="wheel">
+                    </div>
+                <div class="wheel-center"></div>
+            </div>
+
+            <div class="betting-panel">
+                <h2>Place Your Bet</h2>
+                <p style="text-align: center; font-size: 1.2rem;">Balance: $<span id="balance"><%= balance.toFixed(2) %></span></p>
+                
+                <div class="number-grid" id="number-grid">
+                    </div>
+
+                <div class="bet-controls">
+                    <input type="number" class="bet-amount" id="betAmount" min="1" value="10">
+                    <button id="spin-btn">SPIN</button>
+                </div>
+
+                <div id="result"></div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const wheel = document.getElementById('wheel');
+            const spinBtn = document.getElementById('spin-btn');
+            const betAmountInput = document.getElementById('betAmount');
+            const balanceDisplay = document.getElementById('balance');
+            const resultDisplay = document.getElementById('result');
+            const numberGrid = document.getElementById('number-grid');
+
+            let selectedNumber = null;
+            let isSpinning = false;
+            let currentRotation = 0;
+
+            const numbersInOrder = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+            const numberColors = {
+                red: [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36],
+                black: [2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24, 26, 28, 29, 31, 33, 35],
+                green: [0]
+            };
+
+            const pocketCount = numbersInOrder.length;
+            const pocketAngle = 360 / pocketCount;
+
+            function createWheelAndGrid() {
+                const gradientParts = [];
+                
+                // --- Create Betting Grid ---
+                for (let i = 1; i <= 36; i++) {
+                     const btn = document.createElement('button');
+                     btn.className = 'number-btn';
+                     btn.textContent = i;
+                     btn.dataset.number = i;
+                     const color = numberColors.red.includes(i) ? '#e74c3c' : '#000';
+                     btn.style.backgroundColor = color;
+                     numberGrid.appendChild(btn);
+                }
+                const zeroBtn = document.createElement('button');
+                zeroBtn.className = 'number-btn';
+                zeroBtn.textContent = '0';
+                zeroBtn.dataset.number = '0';
+                zeroBtn.style.gridColumn = '1 / -1'; // Span full width
+                numberGrid.insertBefore(zeroBtn, numberGrid.firstChild);
+
+
+                // --- Create Visual Wheel ---
+                const wheelRadius = wheel.offsetWidth / 2;
+                const numberOffsetFromEdge = 30; // How far from the outer edge the number should be
+                const placementRadius = wheelRadius - numberOffsetFromEdge;
+
+                numbersInOrder.forEach((num, index) => {
+                    // --- 1. Place the numbers on the wheel ---
+                    const pocketCenterAngle = index * pocketAngle + (pocketAngle / 2);
+                    
+                    const numberEl = document.createElement('div');
+                    numberEl.className = 'wheel-number';
+                    numberEl.textContent = num;
+
+                    // This transform rotates the number into position, moves it out from the center,
+                    // and then rotates the text itself back to be upright.
+                    numberEl.style.transform = `
+                        rotate(${pocketCenterAngle}deg)
+                        translateY(-${placementRadius}px)
+                        rotate(-${pocketCenterAngle}deg)
+                    `;
+                    wheel.appendChild(numberEl);
+                    
+                    // --- 2. Build the conic gradient for the background ---
+                    const color = num === 0 ? '#0a5c36' : (numberColors.red.includes(num) ? '#e74c3c' : '#000');
+                    const startAngle = index * pocketAngle;
+                    const endAngle = (index + 1) * pocketAngle;
+                    gradientParts.push(`${color} ${startAngle}deg ${endAngle}deg`);
+                });
+                wheel.style.background = `conic-gradient(${gradientParts.join(', ')})`;
+            }
+            
+            createWheelAndGrid();
+            const numberBtns = document.querySelectorAll('.number-btn');
+
+            // --- Event Listeners ---
+            numberBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (isSpinning) return;
+                    const previouslySelected = document.querySelector('.number-btn.selected');
+                    if (previouslySelected) {
+                        previouslySelected.classList.remove('selected');
+                    }
+                    btn.classList.add('selected');
+                    selectedNumber = btn.dataset.number;
+                });
+            });
+
+            spinBtn.addEventListener('click', async () => {
+                if (selectedNumber === null) {
+                    alert('Please select a number to bet on.');
+                    return;
+                }
+                if (isSpinning) return;
+
+                const amount = parseInt(betAmountInput.value, 10);
+                if (isNaN(amount) || amount < 1) {
+                    alert('Please enter a valid bet amount.');
+                    return;
+                }
+
+                isSpinning = true;
+                spinBtn.disabled = true;
+                resultDisplay.style.display = 'none';
+                resultDisplay.className = '';
+
+                try {
+                    const response = await fetch('/roulette/bet', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ amount, number: selectedNumber })
+                    });
+
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.error || 'Betting failed.');
+                    
+                    animateWheel(data.winningNumber, () => {
+                        balanceDisplay.textContent = data.newBalance.toFixed(2);
+                        resultDisplay.textContent = data.message;
+                        resultDisplay.className = data.win ? 'win' : 'lose';
+                        resultDisplay.style.display = 'block';
+                        isSpinning = false;
+                        spinBtn.disabled = false;
+                    });
+
+                } catch (err) {
+                    console.error('Error:', err);
+                    alert(err.message);
+                    isSpinning = false;
+                    spinBtn.disabled = false;
+                }
+            });
+
+            function animateWheel(winningNumber, callback) {
+                const winningIndex = numbersInOrder.indexOf(winningNumber);
+                // Target angle should align the center of the winning pocket with the top pointer
+                const targetAngle = 360 - (winningIndex * pocketAngle) - (pocketAngle / 2);
+                
+                const spins = 8;
+                const randomOffset = (Math.random() - 0.5) * pocketAngle * 0.8; // a little wobble
+                const finalRotation = (360 * spins) + targetAngle + randomOffset;
+                
+                // Use the existing rotation as a base for a continuous spin
+                currentRotation += finalRotation;
+                wheel.style.transform = `rotate(${currentRotation}deg)`;
+                
+                setTimeout(callback, 6000); // Wait for CSS transition (6s) to finish
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Satsuya Casino</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header>
+        <h1>Satsuya Casino Dashboard</h1>
+        <nav>
+            <a href="/dashboard">Home</a>
+            <a href="/invites">My Invites</a>
+            <a href="/roulette">Roulette</a>
+            <a href="/logout">Logout</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="user-info">
+            <h2>Welcome, <%= user.username %> (<%= user._id %>)</h2>
+            <p>Balance: $<%= user.balance %></p>
+        </section>
+
+        <section class="actions">
+            <h3>Quick Actions</h3>
+            <div class="action-buttons">
+                <form action="/invites/generate" method="POST">
+                    <button type="submit">Generate Invite</button>
+                </form>
+                <!--<form action="/invites/buy" method="POST">
+                    <button type="submit">Buy Invite ($10)</button>
+                </form>-->
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Satsuya Casino. All rights reserved.</p>
+    </footer>
+</body>
+</html>
