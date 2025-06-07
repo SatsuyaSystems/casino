@@ -9,6 +9,9 @@ const path = require('path');
 const flash = require('connect-flash');
 const User = require('./models/User');
 
+// Add this for admin layout
+const expressLayouts = require('express-ejs-layouts'); 
+
 const app = express();
 
 // Passport Configuration
@@ -73,6 +76,7 @@ const authRoutes = require('./routes/authRoutes');
 const inviteRoutes = require('./routes/inviteRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const gameRoutes = require('./routes/gameRoutes');
+const adminRoutes = require('./routes/adminRoutes'); // Import admin routes
 
 //PATH LOGGING
 app.use(async (req, res, next) => {
@@ -81,17 +85,20 @@ app.use(async (req, res, next) => {
     next();
 });
 
+// Global variables for views, including flash messages
+app.use((req, res, next) => {
+  res.locals.messages = req.flash(); // Make flash messages available
+  res.locals.user = req.user; // Make user object available
+  // Determine if the current view should use the admin layout or a default/no layout
+  next();
+});
+
 // Routes
 app.use('/', authRoutes);
 app.use('/', inviteRoutes);
 app.use('/', dashboardRoutes);
 app.use('/', gameRoutes);
-
-app.use((req, res, next) => {
-  res.locals.messages = req.flash();
-  res.locals.user = req.user;
-  next();
-});
+app.use('/admin', adminRoutes); // Use admin routes, ensure adminAuthMiddleware is used within adminRoutes.js
 
 app.get('/', (req, res) => {
   res.render('index');

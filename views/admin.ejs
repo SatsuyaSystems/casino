@@ -1,0 +1,140 @@
+<!-- filepath: a:\Satsuya\SatsuyaCasino\views\admin\panel.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Satsuya Casino</title>
+    <!-- Link to your main stylesheet or a specific admin stylesheet -->
+    <link rel="stylesheet" href="/css/style.css"> 
+    <style>
+        /* Basic Admin Styles - you can move these to a separate admin.css */
+        body { font-family: sans-serif; background-color: #f4f4f4; color: #333; margin: 0; padding: 0; }
+        .admin-container { max-width: 1000px; margin: 2rem auto; padding: 1rem; background: white; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        nav.admin-nav { background-color: #333; padding: 1rem; margin-bottom: 1rem; text-align: center; }
+        nav.admin-nav a { color: white; margin: 0 1rem; text-decoration: none; font-weight: bold; }
+        nav.admin-nav a:hover { text-decoration: underline; }
+        h1, h2 { color: #333; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f0f0f0; }
+        .flash-messages { margin-bottom: 1rem; }
+        .flash-error, .flash-success { padding: 12px; margin-bottom: 15px; border-radius: 5px; font-size: 0.95em; }
+        .flash-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .flash-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .invite-tree ul { list-style-type: none; padding-left: 25px; }
+        .invite-tree li { margin: 8px 0; padding: 5px; background-color: #f9f9f9; border-left: 3px solid #ccc; }
+        .invite-tree strong { color: #0056b3; }
+        .action-form input[type="number"] { padding: 6px; margin-right: 5px; border: 1px solid #ccc; border-radius: 3px; }
+        .action-form button { padding: 6px 12px; background-color: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        .action-form button:hover { background-color: #0056b3; }
+        .view-link { color: #007bff; text-decoration: none; }
+        .view-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <nav class="admin-nav">
+        <a href="/admin/dashboard">Admin Dashboard</a>
+        <a href="/dashboard">Main Site</a>
+        <% if (user) { %>
+            <a href="/logout">Logout (<%= user.username %>)</a>
+        <% } %>
+    </nav>
+
+    <div class="admin-container">
+        <div class="flash-messages">
+            <% if (messages.error && messages.error.length > 0) { %>
+                <div class="flash-error">
+                    <%- messages.error.join('<br>') %>
+                </div>
+            <% } %>
+            <% if (messages.success && messages.success.length > 0) { %>
+                <div class="flash-success">
+                    <%- messages.success.join('<br>') %>
+                </div>
+            <% } %>
+        </div>
+
+        <% if (view === 'dashboard') { %>
+            <h1>Admin Dashboard</h1>
+            <h2>Manage Users</h2>
+            <% if (typeof users !== 'undefined' && users.length > 0) { %>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Balance</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% users.forEach(u => { %>
+                            <tr>
+                                <td><%= u._id %></td>
+                                <td><%= u.username %></td>
+                                <td><%= u.email %></td>
+                                <td>
+                                    <form action="/admin/users/balance" method="POST" class="action-form" style="display: inline;">
+                                        <input type="hidden" name="userId" value="<%= u._id %>">
+                                        <input type="number" name="newBalance" value="<%= u.balance %>" step="0.01" required>
+                                        <button type="submit">Update</button>
+                                    </form>
+                                </td>
+                                <td>
+                                    <a href="/admin/users/<%= u._id %>/invite-tree" class="view-link">View Invite Tree</a>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            <% } else { %>
+                <p>No users found.</p>
+            <% } %>
+
+        <% } else if (view === 'inviteTree') { %>
+            <h1>Invite Tree for <%= targetUser.username %></h1>
+            
+            <% function displayTree(node, level = 0) { %>
+                <% if (node && node.user) { %>
+                    <li style="margin-left: <%= level * 20 %>px;">
+                        <strong><%= node.user.username %></strong> (<%= node.user.email %>)
+                        <% if (node.inviteCode) { %> - Invited via: <%= node.inviteCode %><% } %>
+                        <% if (node.children && node.children.length > 0) { %>
+                            <ul>
+                                <% node.children.forEach(child => { %>
+                                    <% displayTree(child, level + 1); %>
+                                <% }); %>
+                            </ul>
+                        <% } %>
+                    </li>
+                <% } else if (node && node.invitees && node.invitees.length > 0) { // For the root node from controller %>
+                    <ul>
+                        <% node.invitees.forEach(invitee => { %>
+                            <% displayTree(invitee, level + 0); %>
+                        <% }); %>
+                    </ul>
+                <% } %>
+            <% } %>
+            
+            <div class="invite-tree">
+                <% if (inviteTree && ((inviteTree.invitees && inviteTree.invitees.length > 0) || (inviteTree.user && inviteTree.invitees && inviteTree.invitees.length > 0))) { %>
+                    <ul>
+                       <% displayTree(inviteTree); %>
+                    </ul>
+                <% } else { %>
+                    <p>This user has not invited anyone, or their invitees haven't invited anyone.</p>
+                <% } %>
+            </div>
+            <br>
+            <a href="/admin/dashboard" class="view-link">Back to Admin Dashboard</a>
+
+        <% } else { %>
+            <h1>Admin Panel</h1>
+            <p>Welcome to the admin panel. Select an option from the navigation.</p>
+        <% } %>
+
+    </div>
+</body>
+</html>
