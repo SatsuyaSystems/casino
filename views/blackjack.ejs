@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Blackjack - Satsuya Casino</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        /* Blackjack-spezifische Stile */
+        .game-board {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+        }
+        .hand {
+            display: flex;
+            gap: 10px;
+        }
+        .card {
+            width: 80px;
+            height: 120px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            background-color: white;
+            color: black;
+        }
+        .card.red {
+            color: red;
+        }
+        .controls, .bet-controls {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        #game-message {
+            margin-top: 1rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Blackjack</h1>
+        <p>Guthaben: $<span id="balance"><%= user.balance %></span></p>
+    </header>
+    <nav>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/games">Spiele</a>
+        <a href="/logout">Logout</a>
+    </nav>
+
+    <main>
+        <div class="game-board">
+            <div id="dealer-section">
+                <h2>Dealer's Hand (<span id="dealer-value"></span>)</h2>
+                <div id="dealer-hand" class="hand"></div>
+            </div>
+
+            <div id="player-section">
+                <h2>Deine Hand (<span id="player-value"></span>)</h2>
+                <div id="player-hand" class="hand"></div>
+            </div>
+
+            <div id="game-message"></div>
+
+            <div id="bet-controls" class="bet-controls">
+                <input type="number" id="bet-amount" value="10" min="1">
+                <button id="start-game-btn">Spiel starten</button>
+            </div>
+            
+            <div id="game-controls" class="controls" style="display: none;">
+                <button id="hit-btn">Hit (Karte ziehen)</button>
+                <button id="stand-btn">Stand (Halten)</button>
+            </div>
+        </div>
+    </main>
+    
+    <script src="/js/blackjack-client.js"></script>
+</body>
+</html>

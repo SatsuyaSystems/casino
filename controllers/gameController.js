@@ -79,3 +79,173 @@ exports.placeBet = async (req, res) => {
         });
     }
 };
+
+// Zeigt die Blackjack-Seite an
+exports.showBlackjack = (req, res) => {
+    res.render('blackjack', { 
+        user: req.user,
+    });
+};
+
+// Hilfsfunktionen für das Spiel
+const suits = ['hearts', 'diamonds', 'clubs', 'spades'];
+const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+
+const createDeck = () => {
+    const deck = [];
+    for (const suit of suits) {
+        for (const value of values) {
+            deck.push({ suit, value });
+        }
+    }
+    return deck;
+};
+
+const shuffleDeck = (deck) => {
+    for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+    return deck;
+};
+
+const getCardValue = (card) => {
+    if (['J', 'Q', 'K'].includes(card.value)) return 10;
+    if (card.value === 'A') return 11;
+    return parseInt(card.value);
+};
+
+const getHandValue = (hand) => {
+    let value = 0;
+    let aceCount = 0;
+    for (const card of hand) {
+        value += getCardValue(card);
+        if (card.value === 'A') aceCount++;
+    }
+    while (value > 21 && aceCount > 0) {
+        value -= 10;
+        aceCount--;
+    }
+    return value;
+};
+
+
+// Startet ein neues Blackjack-Spiel
+exports.startBlackjack = async (req, res) => {
+    try {
+        const { amount } = req.body;
+        const betAmount = parseInt(amount);
+        const user = await User.findById(req.user._id);
+
+        if (betAmount > user.balance) {
+            return res.status(400).json({ success: false, error: 'Unzureichendes Guthaben' });
+        }
+        if (betAmount <= 0) {
+            return res.status(400).json({ success: false, error: 'Ungültiger Einsatz' });
+        }
+
+        user.balance -= betAmount;
+        await user.save();
+
+        const deck = shuffleDeck(createDeck());
+        const playerHand = [deck.pop(), deck.pop()];
+        const dealerHand = [deck.pop(), deck.pop()];
+
+        // Speichere den Spielzustand in der Session
+        req.session.blackjack = {
+            deck,
+            playerHand,
+            dealerHand,
+            betAmount,
+            gameOver: false
+        };
+
+        res.json({
+            success: true,
+            playerHand,
+            dealerHand: [dealerHand[0]], // Zeige nur die erste Karte des Dealers
+            playerValue: getHandValue(playerHand),
+            dealerValue: getCardValue(dealerHand[0]),
+            newBalance: user.balance,
+            message: `Wette von $${betAmount} platziert. Dein Zug.`
+        });
+
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Spiel konnte nicht gestartet werden.' });
+    }
+};
+
+// Verarbeitet eine Spieleraktion (Hit oder Stand)
+exports.playerAction = async (req, res) => {
+    try {
+        const { action } = req.body;
+        const game = req.session.blackjack;
+        const user = await User.findById(req.user._id);
+
+        if (!game || game.gameOver) {
+            return res.status(400).json({ success: false, error: 'Kein aktives Spiel gefunden.' });
+        }
+
+        let playerValue = getHandValue(game.playerHand);
+        let dealerValue = getHandValue(game.dealerHand);
+        let message = '';
+        let payout = 0;
+
+        if (action === 'hit') {
+            game.playerHand.push(game.deck.pop());
+            playerValue = getHandValue(game.playerHand);
+            
+            if (playerValue > 21) {
+                game.gameOver = true;
+                message = `Bust! Du hast verloren. Endwert: ${playerValue}.`;
+                payout = 0; // Der Einsatz ist bereits abgezogen
+            }
+        }
+
+        if (action === 'stand' || game.gameOver) {
+            game.gameOver = true; // Spiel endet nach dem Stand oder Bust
+            
+            // Dealer zieht, bis er 17 oder mehr hat
+            while (getHandValue(game.dealerHand) < 17) {
+                game.dealerHand.push(game.deck.pop());
+            }
+            dealerValue = getHandValue(game.dealerHand);
+
+            // Gewinner ermitteln, nur wenn der Spieler nicht schon "Bust" ist
+            if (playerValue <= 21) {
+                if (dealerValue > 21 || playerValue > dealerValue) {
+                    message = `Gewonnen! Du: ${playerValue}, Dealer: ${dealerValue}.`;
+                    payout = game.betAmount * 2; // Einsatz zurück + Gewinn
+                } else if (playerValue < dealerValue) {
+                    message = `Verloren. Du: ${playerValue}, Dealer: ${dealerValue}.`;
+                    payout = 0;
+                } else {
+                    message = `Push (Unentschieden). Du: ${playerValue}, Dealer: ${dealerValue}.`;
+                    payout = game.betAmount; // Einsatz zurück
+                }
+            }
+            
+            if (payout > 0) {
+                user.balance += payout;
+                await user.save();
+            }
+        }
+        
+        // Spielzustand in der Session aktualisieren
+        req.session.blackjack = game;
+
+        res.json({
+            success: true,
+            playerHand: game.playerHand,
+            dealerHand: game.gameOver ? game.dealerHand : [game.dealerHand[0]],
+            playerValue: getHandValue(game.playerHand),
+            dealerValue: game.gameOver ? getHandValue(game.dealerHand) : getCardValue(game.dealerHand[0]),
+            gameOver: game.gameOver,
+            message,
+            newBalance: user.balance
+        });
+
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Aktion fehlgeschlagen.' });
+    }
+};

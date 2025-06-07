@@ -9,4 +9,9 @@ router.get('/games', ensureAuthenticated, GameController.showGames);
 router.get('/roulette', ensureAuthenticated, GameController.showRoulette);
 router.post('/roulette/bet', ensureAuthenticated, GameController.placeBet);
 
+router.get('/blackjack', ensureAuthenticated, GameController.showBlackjack);
+router.post('/blackjack/start', ensureAuthenticated, GameController.startBlackjack);
+router.post('/blackjack/action', ensureAuthenticated, GameController.playerAction);
+
+
 module.exports = router;
