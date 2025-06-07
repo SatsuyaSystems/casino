@@ -94,37 +94,25 @@
             <% } %>
 
         <% } else if (view === 'inviteTree') { %>
-            <h1>Invite Tree for <%= targetUser.username %></h1>
-            
-            <% function displayTree(node, level = 0) { %>
-                <% if (node && node.user) { %>
-                    <li style="margin-left: <%= level * 20 %>px;">
-                        <strong><%= node.user.username %></strong> (<%= node.user.email %>)
-                        <% if (node.inviteCode) { %> - Invited via: <%= node.inviteCode %><% } %>
-                        <% if (node.children && node.children.length > 0) { %>
-                            <ul>
-                                <% node.children.forEach(child => { %>
-                                    <% displayTree(child, level + 1); %>
-                                <% }); %>
-                            </ul>
-                        <% } %>
-                    </li>
-                <% } else if (node && node.invitees && node.invitees.length > 0) { // For the root node from controller %>
-                    <ul>
-                        <% node.invitees.forEach(invitee => { %>
-                            <% displayTree(invitee, level + 0); %>
-                        <% }); %>
-                    </ul>
-                <% } %>
-            <% } %>
+            <h1>Users Directly Invited by <%= targetUser.username %></h1>
             
             <div class="invite-tree">
-                <% if (inviteTree && ((inviteTree.invitees && inviteTree.invitees.length > 0) || (inviteTree.user && inviteTree.invitees && inviteTree.invitees.length > 0))) { %>
+                <% if (inviteData && inviteData.invitees && inviteData.invitees.length > 0) { %>
                     <ul>
-                       <% displayTree(inviteTree); %>
+                        <% inviteData.invitees.forEach(inviteeInfo => { %>
+                            <% if (inviteeInfo.user) { %>
+                                <li>
+                                    <strong><%= inviteeInfo.user.username %></strong> 
+                                    (<%= inviteeInfo.user.email ? inviteeInfo.user.email : 'N/A' %>)
+                                    <% if (inviteeInfo.inviteCode) { %> 
+                                        - Invited via code: <%= inviteeInfo.inviteCode %>
+                                    <% } %>
+                                </li>
+                            <% } %>
+                        <% }); %>
                     </ul>
                 <% } else { %>
-                    <p>This user has not invited anyone, or their invitees haven't invited anyone.</p>
+                    <p><%= targetUser.username %> has not directly invited anyone, or no invited users are active.</p>
                 <% } %>
             </div>
             <br>

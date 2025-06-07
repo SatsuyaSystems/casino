@@ -4,11 +4,10 @@ const Invite = require('../models/Invite');
 exports.showDashboard = async (req, res) => {
     try {
         const users = await User.find({});
-        // Pass a 'view' variable to indicate which part of the panel to show
         res.render('admin', { users, view: 'dashboard' });
     } catch (err) {
         req.flash('error', 'Could not fetch users.');
-        res.redirect('/dashboard'); // Or a general error page
+        res.redirect('/dashboard');
     }
 };
 
@@ -17,7 +16,7 @@ exports.updateBalance = async (req, res) => {
         const { userId, newBalance } = req.body;
         if (isNaN(parseFloat(newBalance)) || parseFloat(newBalance) < 0) {
             req.flash('error', 'Invalid balance amount.');
-            return res.redirect('/admin/dashboard'); // This will re-render the dashboard view
+            return res.redirect('/admin/dashboard');
         }
         await User.findByIdAndUpdate(userId, { balance: parseFloat(newBalance) });
         req.flash('success', 'User balance updated successfully.');
@@ -28,55 +27,55 @@ exports.updateBalance = async (req, res) => {
     }
 };
 
-// Helper function to recursively fetch invitees
-async function getInviteTree(userId) {
-    const user = await User.findById(userId).lean();
+// Updated function to get only directly invited users
+async function getDirectInvitees(userId) {
+    const user = await User.findById(userId).lean(); // User whose invitees we're fetching
     if (!user) return null;
 
-    const invitesCreated = await Invite.find({ createdBy: userId }).populate('usedBy', '_id').lean();
-    user.invitees = [];
+    // Find invites created by this user that have been used
+    const invitesCreated = await Invite.find({ createdBy: userId, usedBy: { $ne: null } })
+                                       .populate('usedBy', 'username email _id') // Populate with username, email, and _id
+                                       .lean();
 
-    for (const invite of invitesCreated) {
-        if (invite.usedBy) {
-            const inviteeNode = await getInviteTree(invite.usedBy._id);
-            if (inviteeNode) {
-                user.invitees.push({
-                    user: invite.usedBy,
-                    inviteCode: invite.code,
-                    children: inviteeNode.invitees
-                });
-            } else {
-                 user.invitees.push({
-                    user: invite.usedBy,
-                    inviteCode: invite.code,
-                    children: []
-                });
-            }
+    const directInviteesList = invitesCreated.map(invite => {
+        if (invite.usedBy) { // Ensure usedBy is populated
+            return {
+                user: { // Structure this to match what the EJS might expect for user details
+                    _id: invite.usedBy._id,
+                    username: invite.usedBy.username,
+                    email: invite.usedBy.email
+                },
+                inviteCode: invite.code
+            };
         }
-    }
-    return user;
+        return null; // Should not happen if usedBy is not null, but good practice
+    }).filter(item => item !== null); // Filter out any nulls if they occur
+
+    return { // Return an object that includes the list
+        invitees: directInviteesList
+    };
 }
 
 exports.showUserInviteTree = async (req, res) => {
     try {
         const userId = req.params.userId;
-        const targetUser = await User.findById(userId); // Renamed to avoid conflict with logged-in user
+        const targetUser = await User.findById(userId).lean(); // User whose invite tree is being viewed
         if (!targetUser) {
             req.flash('error', 'User not found.');
             return res.redirect('/admin/dashboard');
         }
 
-        const inviteTree = await getInviteTree(userId);
+        // Fetch only direct invitees using the updated function
+        const directInviteData = await getDirectInvitees(userId);
 
-        // Pass 'view' and necessary data for the invite tree
-        res.render('admin', { 
-            targetUser, 
-            inviteTree,
-            view: 'inviteTree' 
+        res.render('admin', {
+            targetUser,        // The user whose invitees we are viewing
+            inviteData: directInviteData, // Pass the new structure
+            view: 'inviteTree'
         });
     } catch (err) {
-        console.error("Error fetching invite tree:", err);
-        req.flash('error', 'Could not fetch invite tree.');
+        console.error("Error fetching direct invitees:", err);
+        req.flash('error', 'Could not fetch invitees.');
         res.redirect('/admin/dashboard');
     }
 };
