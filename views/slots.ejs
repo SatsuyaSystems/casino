@@ -15,22 +15,31 @@
         }
         .reels {
             display: flex;
-            gap: 20px;
+            gap: 15px; /* Abstand zwischen den Walzen */
             margin-bottom: 2rem;
             border: 5px solid #5a0a66;
             padding: 20px;
             background: #000;
         }
-        .reel {
-            width: 100px;
-            height: 100px;
+        .reel-container { /* Eine Walze/Spalte */
+            display: flex;
+            flex-direction: column;
+            gap: 10px; /* Abstand zwischen den Symbolen in einer Walze */
+        }
+        .reel-cell { /* Eine einzelne Zelle/Symbol */
+            width: 90px;
+            height: 90px;
             background-color: white;
             border: 2px solid #333;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 3rem;
-            overflow: hidden; /* Für die Animation */
+            font-size: 2.5rem;
+            transition: background-color 0.3s;
+        }
+        .winning-cell {
+            background-color: #ffd700; /* Gold-Hintergrund für Gewinne */
+            transform: scale(1.1);
         }
         .controls {
             display: flex;
@@ -51,7 +60,7 @@
 </head>
 <body>
     <header>
-        <h1>Slot Machine</h1>
+        <h1>4x3 Slot Machine</h1>
         <p>Guthaben: $<span id="balance"><%= user.balance %></span></p>
     </header>
      <nav>
@@ -63,9 +72,13 @@
     <main>
         <div class="slot-machine">
             <div class="reels">
-                <div class="reel" id="reel1">❓</div>
-                <div class="reel" id="reel2">❓</div>
-                <div class="reel" id="reel3">❓</div>
+                <% for(let i = 0; i < 4; i++) { %>
+                    <div class="reel-container">
+                        <% for(let j = 0; j < 3; j++) { %>
+                            <div class="reel-cell" id="cell-<%= i %>-<%= j %>">❓</div>
+                        <% } %>
+                    </div>
+                <% } %>
             </div>
 
             <div id="game-message">Setze einen Betrag und drücke auf "Spin"!</div>

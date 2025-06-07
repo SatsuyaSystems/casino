@@ -3,41 +3,52 @@ document.addEventListener('DOMContentLoaded', () => {
     const messageElem = document.getElementById('game-message');
     const spinBtn = document.getElementById('spin-btn');
     const betAmountInput = document.getElementById('bet-amount');
-    const reels = [
-        document.getElementById('reel1'),
-        document.getElementById('reel2'),
-        document.getElementById('reel3')
-    ];
     
+    const numReels = 4;
+    const numRows = 3;
     const symbols = ['🍒', '🍋', '🍊', '🔔', '🍉', '⭐', '💎'];
+    
+    const cells = [];
+    for (let i = 0; i < numReels; i++) {
+        for (let j = 0; j < numRows; j++) {
+            cells.push(document.getElementById(`cell-${i}-${j}`));
+        }
+    }
 
-    // Funktion für eine einfache visuelle Animation
-    const animateReels = (finalReels) => {
-        let animationInterval = 50; // ms
-        let animationDuration = 1000; // 1 Sekunde pro Walze
-        
-        reels.forEach((reel, index) => {
+    // Funktion zum Zurücksetzen der Hervorhebung
+    const clearHighlights = () => {
+        cells.forEach(cell => cell.classList.remove('winning-cell'));
+    };
+
+    const animateGrid = (finalGrid) => {
+        let animationInterval = 50;
+        let animationDurationPerReel = 800;
+        spinBtn.disabled = true;
+        clearHighlights();
+
+        for (let reelIndex = 0; reelIndex < numReels; reelIndex++) {
             const startTime = Date.now();
             let interval = setInterval(() => {
-                // Zufälliges Symbol anzeigen
-                reel.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+                // Animiere alle Zellen in der aktuellen Spalte
+                for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
+                    const cell = document.getElementById(`cell-${reelIndex}-${rowIndex}`);
+                    cell.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+                }
 
-                // Animation nach der Dauer stoppen
-                if (Date.now() - startTime > animationDuration * (index + 1)) {
+                // Stoppe die Animation für diese Spalte
+                if (Date.now() - startTime > animationDurationPerReel) {
                     clearInterval(interval);
-                    reel.textContent = finalReels[index]; // Endgültiges Symbol anzeigen
-
-                    // Nach der letzten Walze das Ergebnis auswerten
-                    if (index === reels.length - 1) {
-                         spinBtn.disabled = false; // Button wieder aktivieren
+                    // Setze die finalen Symbole für diese Spalte
+                    for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
+                        const cell = document.getElementById(`cell-${reelIndex}-${rowIndex}`);
+                        cell.textContent = finalGrid[reelIndex][rowIndex];
                     }
                 }
             }, animationInterval);
-        });
+        }
     };
 
     spinBtn.addEventListener('click', async () => {
-        spinBtn.disabled = true;
         messageElem.textContent = 'Spinning...';
         
         const amount = betAmountInput.value;
@@ -49,12 +60,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await response.json();
 
         if (data.success) {
-            animateReels(data.reels);
-            // Die UI-Nachricht wird nach der Animation aktualisiert
+            animateGrid(data.grid);
+
+            // Warte, bis die Animation abgeschlossen ist, um die Ergebnisse anzuzeigen
+            const totalAnimationTime = 800 * numReels + 200;
             setTimeout(() => {
                 messageElem.textContent = data.message;
                 balanceElem.textContent = data.newBalance;
-            }, 1000 * reels.length + 500); // Warte, bis die Animation fertig ist
+
+                // Hebe die gewinnenden Linien hervor
+                if (data.win && data.winningLines) {
+                    data.winningLines.forEach(rowIndex => {
+                        for (let reelIndex = 0; reelIndex < numReels; reelIndex++) {
+                            document.getElementById(`cell-${reelIndex}-${rowIndex}`).classList.add('winning-cell');
+                        }
+                    });
+                }
+
+                spinBtn.disabled = false;
+            }, totalAnimationTime);
         } else {
             messageElem.textContent = `Fehler: ${data.error}`;
             spinBtn.disabled = false;

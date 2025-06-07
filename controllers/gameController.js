@@ -257,18 +257,21 @@ exports.showSlots = (req, res) => {
     });
 };
 
-// Verarbeitet einen "Spin"
 exports.playSlots = async (req, res) => {
+    // Symbole und Auszahlungstabelle für 4-in-einer-Reihe
     const symbols = ['🍒', '🍋', '🍊', '🔔', '🍉', '⭐', '💎'];
     const payoutTable = {
-        '🍒🍒🍒': 10,
-        '🍋🍋🍋': 15,
-        '🍊🍊🍊': 20,
-        '🔔🔔🔔': 50,
-        '🍉🍉🍉': 75,
-        '⭐⭐⭐': 100,
-        '💎💎💎': 250,
+        '🍒': 5,
+        '🍋': 8,
+        '🍊': 10,
+        '🔔': 20,
+        '🍉': 40,
+        '⭐': 80,
+        '💎': 150,
     };
+    
+    const numReels = 4;
+    const numRows = 3;
 
     try {
         const { amount } = req.body;
@@ -282,41 +285,54 @@ exports.playSlots = async (req, res) => {
             return res.status(400).json({ success: false, error: 'Ungültiger Einsatz' });
         }
 
-        // Einsatz vom Guthaben abziehen
         user.balance -= betAmount;
 
-        // Walzen "drehen" (zufällige Symbole generieren)
-        const reel1 = symbols[Math.floor(Math.random() * symbols.length)];
-        const reel2 = symbols[Math.floor(Math.random() * symbols.length)];
-        const reel3 = symbols[Math.floor(Math.random() * symbols.length)];
-        
-        const result = [reel1, reel2, reel3];
-        const resultKey = result.join('');
-        
-        let win = false;
-        let payout = 0;
-        let message = 'Verloren. Versuch es erneut!';
+        // Erzeuge ein 4x3 Raster von Symbolen
+        const grid = [];
+        for (let i = 0; i < numReels; i++) {
+            const reel = [];
+            for (let j = 0; j < numRows; j++) {
+                reel.push(symbols[Math.floor(Math.random() * symbols.length)]);
+            }
+            grid.push(reel);
+        }
 
-        // Gewinn prüfen
-        if (payoutTable[resultKey]) {
-            win = true;
-            payout = betAmount * payoutTable[resultKey];
-            user.balance += payout;
-            message = `Gewonnen! Du erhältst $${payout}!`;
+        // Gewinnlinien prüfen (3 horizontale Linien)
+        // Linien sind 0-indiziert (0=oben, 1=mitte, 2=unten)
+        let totalPayout = 0;
+        const winningLines = [];
+        for (let row = 0; row < numRows; row++) {
+            const line = [grid[0][row], grid[1][row], grid[2][row], grid[3][row]];
+            const firstSymbol = line[0];
+            const isWin = line.every(symbol => symbol === firstSymbol);
+            
+            if (isWin) {
+                totalPayout += betAmount * payoutTable[firstSymbol];
+                winningLines.push(row); // Speichere die gewinnende Reihe
+            }
+        }
+        
+        let win = totalPayout > 0;
+        let message = win ? `Gewonnen! Du erhältst $${totalPayout}!` : 'Verloren. Versuch es erneut!';
+        
+        if (win) {
+            user.balance += totalPayout;
         }
 
         await user.save();
 
         res.json({
             success: true,
-            reels: result,
+            grid: grid, // Sende das gesamte Raster an den Client
             win,
-            payout,
+            payout: totalPayout,
+            winningLines, // Sende die Info, welche Linien gewonnen haben
             message,
             newBalance: user.balance
         });
 
     } catch (err) {
+        console.error(err);
         res.status(500).json({ success: false, error: 'Spin fehlgeschlagen.' });
     }
 };
