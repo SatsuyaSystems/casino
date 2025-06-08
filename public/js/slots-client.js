@@ -30,14 +30,14 @@ document.addEventListener('DOMContentLoaded', () => {
             let interval = setInterval(() => {
                 for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
                     const cell = document.getElementById(`cell-${reelIndex}-${rowIndex}`);
-                    if(cell) cell.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+                    if(cell) cell.innerText = symbols[Math.floor(Math.random() * symbols.length)];
                 }
 
                 if (Date.now() - startTime > animationDurationPerReel) {
                     clearInterval(interval);
                     for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
                         const cell = document.getElementById(`cell-${reelIndex}-${rowIndex}`);
-                        if(cell) cell.textContent = finalGrid[reelIndex][rowIndex];
+                        if(cell) cell.innerText = finalGrid[reelIndex][rowIndex];
                     }
                 }
             }, animationInterval);
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     spinBtn.addEventListener('click', async () => {
-        messageElem.textContent = 'Spinning...';
+        messageElem.innerText = 'Spinning...';
         
         const amount = betAmountInput.value;
         const response = await fetch('/slots/spin', {
@@ -60,8 +60,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const totalAnimationTime = 800 * numReels + 200;
             setTimeout(() => {
-                messageElem.textContent = data.message;
-                balanceElem.textContent = data.newBalance;
+                messageElem.innerText = data.message;
+                balanceElem.innerText = data.newBalance;
 
                 // Neue Hervorhebungs-Logik für "Scatter Pays"
                 if (data.win && data.winningSymbols) {
@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 spinBtn.disabled = false;
             }, totalAnimationTime);
         } else {
-            messageElem.textContent = `Fehler: ${data.error}`;
+            messageElem.innerText = `Fehler: ${data.error}`;
             spinBtn.disabled = false;
         }
     });
