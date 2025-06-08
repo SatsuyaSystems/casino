@@ -250,6 +250,12 @@ exports.playerAction = async (req, res) => {
     }
 };
 
+exports.showSlots = (req, res) => {
+    res.render('slots', { 
+        user: req.user,
+    });
+};
+
 // Zeigt die Slot-Machine-Seite an
 exports.playSlots = async (req, res) => {
     const symbols = ['🍒', '🍋', '🍊', '🔔', '🍉', '⭐', '💎'];
