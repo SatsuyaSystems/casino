@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.success) {
             animateGrid(data.grid);
 
-            const totalAnimationTime = 800 * numReels + 200;
+            const totalAnimationTime = 800;
             setTimeout(() => {
                 messageElem.innerText = data.message;
                 balanceElem.innerText = data.newBalance;
