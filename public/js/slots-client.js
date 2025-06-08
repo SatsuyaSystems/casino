@@ -63,15 +63,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 messageElem.innerText = data.message;
                 balanceElem.innerText = data.newBalance;
 
-                // Neue Hervorhebungs-Logik für "Scatter Pays"
-                if (data.win && data.winningSymbols) {
-                    for (const symbol in data.winningSymbols) {
-                        data.winningSymbols[symbol].forEach(coord => {
+                if (data.win && data.winningLineDetails) {
+                    // data.winningLineDetails is an array of winning lines.
+                    // Each line is an array of coordinates, like [[0, 0], [1, 0], [2, 0]].
+                    data.winningLineDetails.forEach(line => {
+                        line.forEach(coord => {
                             const [col, row] = coord;
                             const cell = document.getElementById(`cell-${col}-${row}`);
-                            if(cell) cell.classList.add('winning-cell');
+                            if (cell) {
+                                cell.classList.add('winning-cell');
+                            }
                         });
-                    }
+                    });
                 }
 
                 spinBtn.disabled = false;
