@@ -313,19 +313,33 @@ exports.playSlots = async (req, res) => {
         const winningLineDetails = [];
 
         for (const line of paylines) {
-            const firstSymbol = grid[line[0][0]][line[0][1]];
-            const isWin = line.every(coord => grid[coord[0]][coord[1]] === firstSymbol);
+            const lineSymbols = line.map(coord => grid[coord[0]][coord[1]]);
+            const symbolCounts = {};
 
-            if (isWin) {
-                const matchCount = line.length;
-                const payoutMultiplier = payoutTable[firstSymbol][matchCount];
+            // Count how many times each symbol appears on the line
+            for (const symbol of lineSymbols) {
+                symbolCounts[symbol] = (symbolCounts[symbol] || 0) + 1;
+            }
 
-                if (payoutMultiplier) {
-                    totalPayout += betAmount * payoutMultiplier;
-                    winningLineDetails.push(line);
+            // Check if any symbol count is high enough for a win
+            for (const symbol in symbolCounts) {
+                const count = symbolCounts[symbol];
+                if (count >= 3) { // Award a win for 3 or more matches
+                    const payoutMultiplier = payoutTable[symbol][count];
+                    if (payoutMultiplier) {
+                        totalPayout += betAmount * payoutMultiplier;
+                        
+                        // Find the coordinates of the winning symbols to highlight them
+                        const winningCoordsOnLine = line.filter(coord => grid[coord[0]][coord[1]] === symbol);
+                        winningLineDetails.push(...winningCoordsOnLine);
+                    }
                 }
             }
         }
+        
+        // Ensure each winning cell is only highlighted once, even if it's on multiple winning lines
+        const uniqueWinningCoords = [...new Set(winningLineDetails.map(JSON.stringify))].map(JSON.parse);
+        const finalWinningDetails = uniqueWinningCoords.length > 0 ? [uniqueWinningCoords] : [];
         
         let win = totalPayout > 0;
         let message = win ? `Gewonnen! Du erhältst $${totalPayout}!` : 'Verloren. Versuch es erneut!';
@@ -340,7 +354,7 @@ exports.playSlots = async (req, res) => {
             grid,
             win,
             payout: totalPayout,
-            winningLineDetails,
+            winningLineDetails: finalWinningDetails,
             message,
             newBalance: user.balance
         });
