@@ -283,49 +283,51 @@ exports.playSlots = async (req, res) => {
         }
         user.balance -= betAmount;
 
+        // Das 5x3 Raster mit zufälligen Symbolen füllen
         const grid = Array.from({ length: numReels }, () => 
             Array.from({ length: numRows }, () => symbols[Math.floor(Math.random() * symbols.length)])
         );
 
         let totalPayout = 0;
-        const winningLineDetails = [];
+        const winningLineDetails = []; // Wir missbrauchen diese Variable, um Cluster-Koordinaten zu speichern
         const visited = Array.from({ length: numReels }, () => Array(numRows).fill(false));
 
-        const findCluster = (col, row, symbol) => {
-            if (
-                col < 0 || col >= numReels || row < 0 || row >= numRows || // Außerhalb des Rasters
-                visited[col][row] || // Bereits besucht
-                grid[col][row] !== symbol // Falsches Symbol
-            ) {
-                return [];
-            }
-            
-            visited[col][row] = true;
-            let cluster = [[col, row]];
-            
-            // Rekursive Suche in alle 4 Richtungen
-            cluster = cluster.concat(findCluster(col + 1, row, symbol));
-            cluster = cluster.concat(findCluster(col - 1, row, symbol));
-            cluster = cluster.concat(findCluster(col, row + 1, symbol));
-            cluster = cluster.concat(findCluster(col, row - 1, symbol));
-            
-            return cluster;
-        };
-
+        // Jede Zelle des Rasters durchgehen, um Cluster zu finden
         for (let col = 0; col < numReels; col++) {
             for (let row = 0; row < numRows; row++) {
-                if (!visited[col][row]) {
-                    const cluster = findCluster(col, row, grid[col][row]);
-                    
-                    if (cluster.length >= 5) {
-                        const currentSymbol = grid[col][row];
-                        const payoutKey = cluster.length >= 9 ? '9+' : cluster.length.toString();
-                        const payoutMultiplier = payoutTable[currentSymbol][payoutKey];
+                if (visited[col][row]) continue;
 
-                        if (payoutMultiplier) {
-                            totalPayout += betAmount * payoutMultiplier;
-                            winningLineDetails.push(cluster);
+                const currentSymbol = grid[col][row];
+                const cluster = [];
+                const queue = [[col, row]]; // Startpunkt für die Suche
+                visited[col][row] = true;
+                
+                let head = 0;
+                while(head < queue.length) {
+                    const [c, r] = queue[head++];
+                    cluster.push([c, r]);
+                    
+                    // Prüfe alle 4 Nachbarn (oben, unten, links, rechts)
+                    const neighbors = [[c, r - 1], [c, r + 1], [c - 1, r], [c + 1, r]];
+                    for(const [nc, nr] of neighbors) {
+                        if (
+                            nc >= 0 && nc < numReels && nr >= 0 && nr < numRows && // Innerhalb des Rasters
+                            !visited[nc][nr] && // Noch nicht besucht
+                            grid[nc][nr] === currentSymbol // Gleiches Symbol
+                        ) {
+                            visited[nc][nr] = true;
+                            queue.push([nc, nr]);
                         }
+                    }
+                }
+
+                // Wenn der Cluster groß genug ist, berechne den Gewinn
+                if (cluster.length >= 5) {
+                    const payoutKey = cluster.length >= 9 ? '9+' : cluster.length.toString();
+                    const payoutMultiplier = payoutTable[currentSymbol][payoutKey];
+                    if (payoutMultiplier) {
+                        totalPayout += betAmount * payoutMultiplier;
+                        winningLineDetails.push(cluster);
                     }
                 }
             }
@@ -344,7 +346,7 @@ exports.playSlots = async (req, res) => {
             grid,
             win,
             payout: totalPayout,
-            winningLineDetails,
+            winningLineDetails, // Sendet die Koordinaten aller Gewinn-Cluster
             message,
             newBalance: user.balance
         });
