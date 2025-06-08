@@ -273,23 +273,21 @@ exports.playSlots = async (req, res) => {
         '💎': { 3: 20, 4: 50, 5: 250 },
     };
 
-    // Erweiterte Gewinnlinien: horizontal, vertikal und mehr Diagonalen
+    // Erweiterte Gewinnlinien: horizontal, vertikal und Diagonalen
     const paylines = [
-        // 3 Horizontale Linien (5 Symbole)
+        // 3 Horizontale Linien (Länge 5)
         [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]],
         [[0, 1], [1, 1], [2, 1], [3, 1], [4, 1]],
         [[0, 2], [1, 2], [2, 2], [3, 2], [4, 2]],
-
-        // 5 Vertikale Linien (3 Symbole) - NEU
+        // 5 Vertikale Linien (Länge 3)
         [[0, 0], [0, 1], [0, 2]],
         [[1, 0], [1, 1], [1, 2]],
         [[2, 0], [2, 1], [2, 2]],
         [[3, 0], [3, 1], [3, 2]],
         [[4, 0], [4, 1], [4, 2]],
-
-        // 2 Lange Diagonale Linien (5 Symbole)
-        [[0, 0], [1, 1], [2, 2], [3, 2], [4, 2]], // Start oben links, endet unten rechts
-        [[0, 2], [1, 1], [2, 0], [3, 0], [4, 0]], // Start unten links, endet oben rechts
+        // 2 Diagonale Linien (Länge 5)
+        [[0, 0], [1, 1], [2, 2], [3, 1], [4, 0]], // V-Form
+        [[0, 2], [1, 1], [2, 0], [3, 1], [4, 2]], // umgekehrte V-Form
     ];
 
     try {
@@ -314,13 +312,12 @@ exports.playSlots = async (req, res) => {
         let totalPayout = 0;
         const winningLineDetails = [];
 
-        // NEUE, verbesserte Logik zur Gewinnprüfung
         for (const line of paylines) {
             const firstSymbol = grid[line[0][0]][line[0][1]];
             const isWin = line.every(coord => grid[coord[0]][coord[1]] === firstSymbol);
 
             if (isWin) {
-                const matchCount = line.length; // Länge der Gewinnlinie (3, 4 oder 5)
+                const matchCount = line.length;
                 const payoutMultiplier = payoutTable[firstSymbol][matchCount];
 
                 if (payoutMultiplier) {
