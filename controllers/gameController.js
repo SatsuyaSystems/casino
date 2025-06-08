@@ -275,20 +275,28 @@ exports.playSlots = async (req, res) => {
 
     // Erweiterte Gewinnlinien: horizontal, vertikal und Diagonalen
     const paylines = [
-        // 3 Horizontale Linien (Länge 5)
-        [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]],
-        [[0, 1], [1, 1], [2, 1], [3, 1], [4, 1]],
-        [[0, 2], [1, 2], [2, 2], [3, 2], [4, 2]],
-        // 5 Vertikale Linien (Länge 3)
-        [[0, 0], [0, 1], [0, 2]],
-        [[1, 0], [1, 1], [1, 2]],
-        [[2, 0], [2, 1], [2, 2]],
-        [[3, 0], [3, 1], [3, 2]],
-        [[4, 0], [4, 1], [4, 2]],
-        // 2 Diagonale Linien (Länge 5)
-        [[0, 0], [1, 1], [2, 2], [3, 1], [4, 0]], // V-Form
-        [[0, 2], [1, 1], [2, 0], [3, 1], [4, 2]], // umgekehrte V-Form
-    ];
+    // 3 Horizontale Linien (Länge 5)
+    [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]],
+    [[0, 1], [1, 1], [2, 1], [3, 1], [4, 1]],
+    [[0, 2], [1, 2], [2, 2], [3, 2], [4, 2]],
+
+    // 5 Vertikale Linien (Länge 3)
+    [[0, 0], [0, 1], [0, 2]],
+    [[1, 0], [1, 1], [1, 2]],
+    [[2, 0], [2, 1], [2, 2]],
+    [[3, 0], [3, 1], [3, 2]],
+    [[4, 0], [4, 1], [4, 2]],
+
+    // 2 Lange Diagonale Linien (Länge 5)
+    [[0, 0], [1, 1], [2, 2], [3, 1], [4, 0]],
+    [[0, 2], [1, 1], [2, 0], [3, 1], [4, 2]],
+
+    // *** NEUE ZICK-ZACK-LINIEN ***
+    [[0, 0], [1, 1], [2, 0], [3, 1], [4, 0]], // W-Form oben
+    [[0, 2], [1, 1], [2, 2], [3, 1], [4, 2]], // M-Form unten
+    [[0, 1], [1, 0], [2, 0], [3, 0], [4, 1]], // Brücke oben
+    [[0, 1], [1, 2], [2, 2], [3, 2], [4, 1]], // Brücke unten
+];
 
     try {
         const { amount } = req.body;
@@ -313,33 +321,19 @@ exports.playSlots = async (req, res) => {
         const winningLineDetails = [];
 
         for (const line of paylines) {
-            const lineSymbols = line.map(coord => grid[coord[0]][coord[1]]);
-            const symbolCounts = {};
+            const firstSymbol = grid[line[0][0]][line[0][1]];
+            const isWin = line.every(coord => grid[coord[0]][coord[1]] === firstSymbol);
 
-            // Count how many times each symbol appears on the line
-            for (const symbol of lineSymbols) {
-                symbolCounts[symbol] = (symbolCounts[symbol] || 0) + 1;
-            }
+            if (isWin) {
+                const matchCount = line.length;
+                const payoutMultiplier = payoutTable[firstSymbol][matchCount];
 
-            // Check if any symbol count is high enough for a win
-            for (const symbol in symbolCounts) {
-                const count = symbolCounts[symbol];
-                if (count >= 3) { // Award a win for 3 or more matches
-                    const payoutMultiplier = payoutTable[symbol][count];
-                    if (payoutMultiplier) {
-                        totalPayout += betAmount * payoutMultiplier;
-                        
-                        // Find the coordinates of the winning symbols to highlight them
-                        const winningCoordsOnLine = line.filter(coord => grid[coord[0]][coord[1]] === symbol);
-                        winningLineDetails.push(...winningCoordsOnLine);
-                    }
+                if (payoutMultiplier) {
+                    totalPayout += betAmount * payoutMultiplier;
+                    winningLineDetails.push(line);
                 }
             }
         }
-        
-        // Ensure each winning cell is only highlighted once, even if it's on multiple winning lines
-        const uniqueWinningCoords = [...new Set(winningLineDetails.map(JSON.stringify))].map(JSON.parse);
-        const finalWinningDetails = uniqueWinningCoords.length > 0 ? [uniqueWinningCoords] : [];
         
         let win = totalPayout > 0;
         let message = win ? `Gewonnen! Du erhältst $${totalPayout}!` : 'Verloren. Versuch es erneut!';
@@ -354,7 +348,7 @@ exports.playSlots = async (req, res) => {
             grid,
             win,
             payout: totalPayout,
-            winningLineDetails: finalWinningDetails,
+            winningLineDetails,
             message,
             newBalance: user.balance
         });
