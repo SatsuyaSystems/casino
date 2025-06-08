@@ -258,20 +258,39 @@ exports.showSlots = (req, res) => {
 };
 
 exports.playSlots = async (req, res) => {
-    // Symbole und Auszahlungstabelle für 4-in-einer-Reihe
     const symbols = ['🍒', '🍋', '🍊', '🔔', '🍉', '⭐', '💎'];
-    const payoutTable = {
-        '🍒': 5,
-        '🍋': 8,
-        '🍊': 10,
-        '🔔': 20,
-        '🍉': 40,
-        '⭐': 80,
-        '💎': 150,
-    };
-    
-    const numReels = 4;
+    const numReels = 5;
     const numRows = 3;
+
+    // Auszahlungstabelle für 3, 4 oder 5 gleiche Symbole auf einer Linie
+    const payoutTable = {
+        '🍒': { 3: 2, 4: 5, 5: 15 },
+        '🍋': { 3: 3, 4: 6, 5: 20 },
+        '🍊': { 3: 4, 4: 8, 5: 25 },
+        '🔔': { 3: 5, 4: 15, 5: 50 },
+        '🍉': { 3: 8, 4: 20, 5: 80 },
+        '⭐': { 3: 10, 4: 25, 5: 120 },
+        '💎': { 3: 20, 4: 50, 5: 250 },
+    };
+
+    // Erweiterte Gewinnlinien: horizontal, vertikal und mehr Diagonalen
+    const paylines = [
+        // 3 Horizontale Linien (5 Symbole)
+        [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]],
+        [[0, 1], [1, 1], [2, 1], [3, 1], [4, 1]],
+        [[0, 2], [1, 2], [2, 2], [3, 2], [4, 2]],
+
+        // 5 Vertikale Linien (3 Symbole) - NEU
+        [[0, 0], [0, 1], [0, 2]],
+        [[1, 0], [1, 1], [1, 2]],
+        [[2, 0], [2, 1], [2, 2]],
+        [[3, 0], [3, 1], [3, 2]],
+        [[4, 0], [4, 1], [4, 2]],
+
+        // 2 Lange Diagonale Linien (5 Symbole)
+        [[0, 0], [1, 1], [2, 2], [3, 2], [4, 2]], // Start oben links, endet unten rechts
+        [[0, 2], [1, 1], [2, 0], [3, 0], [4, 0]], // Start unten links, endet oben rechts
+    ];
 
     try {
         const { amount } = req.body;
@@ -281,13 +300,8 @@ exports.playSlots = async (req, res) => {
         if (betAmount > user.balance) {
             return res.status(400).json({ success: false, error: 'Unzureichendes Guthaben' });
         }
-        if (betAmount <= 0) {
-            return res.status(400).json({ success: false, error: 'Ungültiger Einsatz' });
-        }
-
         user.balance -= betAmount;
 
-        // Erzeuge ein 4x3 Raster von Symbolen
         const grid = [];
         for (let i = 0; i < numReels; i++) {
             const reel = [];
@@ -297,18 +311,22 @@ exports.playSlots = async (req, res) => {
             grid.push(reel);
         }
 
-        // Gewinnlinien prüfen (3 horizontale Linien)
-        // Linien sind 0-indiziert (0=oben, 1=mitte, 2=unten)
         let totalPayout = 0;
-        const winningLines = [];
-        for (let row = 0; row < numRows; row++) {
-            const line = [grid[0][row], grid[1][row], grid[2][row], grid[3][row]];
-            const firstSymbol = line[0];
-            const isWin = line.every(symbol => symbol === firstSymbol);
-            
+        const winningLineDetails = [];
+
+        // NEUE, verbesserte Logik zur Gewinnprüfung
+        for (const line of paylines) {
+            const firstSymbol = grid[line[0][0]][line[0][1]];
+            const isWin = line.every(coord => grid[coord[0]][coord[1]] === firstSymbol);
+
             if (isWin) {
-                totalPayout += betAmount * payoutTable[firstSymbol];
-                winningLines.push(row); // Speichere die gewinnende Reihe
+                const matchCount = line.length; // Länge der Gewinnlinie (3, 4 oder 5)
+                const payoutMultiplier = payoutTable[firstSymbol][matchCount];
+
+                if (payoutMultiplier) {
+                    totalPayout += betAmount * payoutMultiplier;
+                    winningLineDetails.push(line);
+                }
             }
         }
         
@@ -318,15 +336,14 @@ exports.playSlots = async (req, res) => {
         if (win) {
             user.balance += totalPayout;
         }
-
         await user.save();
 
         res.json({
             success: true,
-            grid: grid, // Sende das gesamte Raster an den Client
+            grid,
             win,
             payout: totalPayout,
-            winningLines, // Sende die Info, welche Linien gewonnen haben
+            winningLineDetails,
             message,
             newBalance: user.balance
         });

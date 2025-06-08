@@ -15,18 +15,18 @@
         }
         .reels {
             display: flex;
-            gap: 15px; /* Abstand zwischen den Walzen */
+            gap: 15px;
             margin-bottom: 2rem;
             border: 5px solid #5a0a66;
             padding: 20px;
             background: #000;
         }
-        .reel-container { /* Eine Walze/Spalte */
+        .reel-container {
             display: flex;
             flex-direction: column;
-            gap: 10px; /* Abstand zwischen den Symbolen in einer Walze */
+            gap: 10px;
         }
-        .reel-cell { /* Eine einzelne Zelle/Symbol */
+        .reel-cell {
             width: 90px;
             height: 90px;
             background-color: white;
@@ -35,11 +35,12 @@
             justify-content: center;
             align-items: center;
             font-size: 2.5rem;
-            transition: background-color 0.3s;
+            transition: all 0.3s;
         }
         .winning-cell {
-            background-color: #ffd700; /* Gold-Hintergrund für Gewinne */
+            background-color: #ffd700;
             transform: scale(1.1);
+            box-shadow: 0 0 15px #ffdd00;
         }
         .controls {
             display: flex;
@@ -60,7 +61,7 @@
 </head>
 <body>
     <header>
-        <h1>4x3 Slot Machine</h1>
+        <h1>5x3 Scatter Slot</h1>
         <p>Guthaben: $<span id="balance"><%= user.balance %></span></p>
     </header>
      <nav>
@@ -72,7 +73,7 @@
     <main>
         <div class="slot-machine">
             <div class="reels">
-                <% for(let i = 0; i < 4; i++) { %>
+                <% for(let i = 0; i < 5; i++) { %>
                     <div class="reel-container">
                         <% for(let j = 0; j < 3; j++) { %>
                             <div class="reel-cell" id="cell-<%= i %>-<%= j %>">❓</div>

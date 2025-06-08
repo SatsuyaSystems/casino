@@ -4,8 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const spinBtn = document.getElementById('spin-btn');
     const betAmountInput = document.getElementById('bet-amount');
     
-    const numReels = 4;
-    const numRows = 3;
+    const numReels = 5; // Angepasst
+    const numRows = 3; // Angepasst
     const symbols = ['🍒', '🍋', '🍊', '🔔', '🍉', '⭐', '💎'];
     
     const cells = [];
@@ -15,7 +15,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Funktion zum Zurücksetzen der Hervorhebung
     const clearHighlights = () => {
         cells.forEach(cell => cell.classList.remove('winning-cell'));
     };
@@ -29,19 +28,16 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let reelIndex = 0; reelIndex < numReels; reelIndex++) {
             const startTime = Date.now();
             let interval = setInterval(() => {
-                // Animiere alle Zellen in der aktuellen Spalte
                 for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
                     const cell = document.getElementById(`cell-${reelIndex}-${rowIndex}`);
-                    cell.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+                    if(cell) cell.textContent = symbols[Math.floor(Math.random() * symbols.length)];
                 }
 
-                // Stoppe die Animation für diese Spalte
                 if (Date.now() - startTime > animationDurationPerReel) {
                     clearInterval(interval);
-                    // Setze die finalen Symbole für diese Spalte
                     for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
                         const cell = document.getElementById(`cell-${reelIndex}-${rowIndex}`);
-                        cell.textContent = finalGrid[reelIndex][rowIndex];
+                        if(cell) cell.textContent = finalGrid[reelIndex][rowIndex];
                     }
                 }
             }, animationInterval);
@@ -62,19 +58,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.success) {
             animateGrid(data.grid);
 
-            // Warte, bis die Animation abgeschlossen ist, um die Ergebnisse anzuzeigen
             const totalAnimationTime = 800 * numReels + 200;
             setTimeout(() => {
                 messageElem.textContent = data.message;
                 balanceElem.textContent = data.newBalance;
 
-                // Hebe die gewinnenden Linien hervor
-                if (data.win && data.winningLines) {
-                    data.winningLines.forEach(rowIndex => {
-                        for (let reelIndex = 0; reelIndex < numReels; reelIndex++) {
-                            document.getElementById(`cell-${reelIndex}-${rowIndex}`).classList.add('winning-cell');
-                        }
-                    });
+                // Neue Hervorhebungs-Logik für "Scatter Pays"
+                if (data.win && data.winningSymbols) {
+                    for (const symbol in data.winningSymbols) {
+                        data.winningSymbols[symbol].forEach(coord => {
+                            const [col, row] = coord;
+                            const cell = document.getElementById(`cell-${col}-${row}`);
+                            if(cell) cell.classList.add('winning-cell');
+                        });
+                    }
                 }
 
                 spinBtn.disabled = false;
