@@ -262,16 +262,41 @@ exports.playSlots = async (req, res) => {
     const numReels = 5;
     const numRows = 3;
 
-    // Auszahlungstabelle für Cluster-Größen. Belohnt größere Gruppen.
+    // Auszahlungstabelle für 3, 4 oder 5 gleiche Symbole auf einer Linie
     const payoutTable = {
-        '🍒': { 5: 3, 6: 5, 7: 8, 8: 12, '9+': 20 },
-        '🍋': { 5: 4, 6: 6, 7: 10, 8: 15, '9+': 25 },
-        '🍊': { 5: 5, 6: 8, 7: 12, 8: 20, '9+': 35 },
-        '🔔': { 5: 8, 6: 12, 7: 20, 8: 40, '9+': 75 },
-        '🍉': { 5: 10, 6: 18, 7: 30, 8: 60, '9+': 120 },
-        '⭐': { 5: 15, 6: 25, 7: 50, 8: 100, '9+': 200 },
-        '💎': { 5: 25, 6: 50, 7: 100, 8: 200, '9+': 500 },
+        '🍒': { 3: 2, 4: 5, 5: 15 },
+        '🍋': { 3: 3, 4: 6, 5: 20 },
+        '🍊': { 3: 4, 4: 8, 5: 25 },
+        '🔔': { 3: 5, 4: 15, 5: 50 },
+        '🍉': { 3: 8, 4: 20, 5: 80 },
+        '⭐': { 3: 10, 4: 25, 5: 120 },
+        '💎': { 3: 20, 4: 50, 5: 250 },
     };
+
+    // Erweiterte Gewinnlinien: horizontal, vertikal und Diagonalen
+    const paylines = [
+    // 3 Horizontale Linien (Länge 5)
+    [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]],
+    [[0, 1], [1, 1], [2, 1], [3, 1], [4, 1]],
+    [[0, 2], [1, 2], [2, 2], [3, 2], [4, 2]],
+
+    // 5 Vertikale Linien (Länge 3)
+    [[0, 0], [0, 1], [0, 2]],
+    [[1, 0], [1, 1], [1, 2]],
+    [[2, 0], [2, 1], [2, 2]],
+    [[3, 0], [3, 1], [3, 2]],
+    [[4, 0], [4, 1], [4, 2]],
+
+    // 2 Lange Diagonale Linien (Länge 5)
+    [[0, 0], [1, 1], [2, 2], [3, 1], [4, 0]],
+    [[0, 2], [1, 1], [2, 0], [3, 1], [4, 2]],
+
+    // *** NEUE ZICK-ZACK-LINIEN ***
+    [[0, 0], [1, 1], [2, 0], [3, 1], [4, 0]], // W-Form oben
+    [[0, 2], [1, 1], [2, 2], [3, 1], [4, 2]], // M-Form unten
+    [[0, 1], [1, 0], [2, 0], [3, 0], [4, 1]], // Brücke oben
+    [[0, 1], [1, 2], [2, 2], [3, 2], [4, 1]], // Brücke unten
+];
 
     try {
         const { amount } = req.body;
@@ -283,58 +308,35 @@ exports.playSlots = async (req, res) => {
         }
         user.balance -= betAmount;
 
-        // Das 5x3 Raster mit zufälligen Symbolen füllen
-        const grid = Array.from({ length: numReels }, () => 
-            Array.from({ length: numRows }, () => symbols[Math.floor(Math.random() * symbols.length)])
-        );
+        const grid = [];
+        for (let i = 0; i < numReels; i++) {
+            const reel = [];
+            for (let j = 0; j < numRows; j++) {
+                reel.push(symbols[Math.floor(Math.random() * symbols.length)]);
+            }
+            grid.push(reel);
+        }
 
         let totalPayout = 0;
-        const winningLineDetails = []; // Wir missbrauchen diese Variable, um Cluster-Koordinaten zu speichern
-        const visited = Array.from({ length: numReels }, () => Array(numRows).fill(false));
+        const winningLineDetails = [];
 
-        // Jede Zelle des Rasters durchgehen, um Cluster zu finden
-        for (let col = 0; col < numReels; col++) {
-            for (let row = 0; row < numRows; row++) {
-                if (visited[col][row]) continue;
+        for (const line of paylines) {
+            const firstSymbol = grid[line[0][0]][line[0][1]];
+            const isWin = line.every(coord => grid[coord[0]][coord[1]] === firstSymbol);
 
-                const currentSymbol = grid[col][row];
-                const cluster = [];
-                const queue = [[col, row]]; // Startpunkt für die Suche
-                visited[col][row] = true;
-                
-                let head = 0;
-                while(head < queue.length) {
-                    const [c, r] = queue[head++];
-                    cluster.push([c, r]);
-                    
-                    // Prüfe alle 4 Nachbarn (oben, unten, links, rechts)
-                    const neighbors = [[c, r - 1], [c, r + 1], [c - 1, r], [c + 1, r]];
-                    for(const [nc, nr] of neighbors) {
-                        if (
-                            nc >= 0 && nc < numReels && nr >= 0 && nr < numRows && // Innerhalb des Rasters
-                            !visited[nc][nr] && // Noch nicht besucht
-                            grid[nc][nr] === currentSymbol // Gleiches Symbol
-                        ) {
-                            visited[nc][nr] = true;
-                            queue.push([nc, nr]);
-                        }
-                    }
-                }
+            if (isWin) {
+                const matchCount = line.length;
+                const payoutMultiplier = payoutTable[firstSymbol][matchCount];
 
-                // Wenn der Cluster groß genug ist, berechne den Gewinn
-                if (cluster.length >= 5) {
-                    const payoutKey = cluster.length >= 9 ? '9+' : cluster.length.toString();
-                    const payoutMultiplier = payoutTable[currentSymbol][payoutKey];
-                    if (payoutMultiplier) {
-                        totalPayout += betAmount * payoutMultiplier;
-                        winningLineDetails.push(cluster);
-                    }
+                if (payoutMultiplier) {
+                    totalPayout += betAmount * payoutMultiplier;
+                    winningLineDetails.push(line);
                 }
             }
         }
         
         let win = totalPayout > 0;
-        let message = win ? `Cluster-Gewinn! Du erhältst $${totalPayout}!` : 'Verloren. Versuch es erneut!';
+        let message = win ? `Gewonnen! Du erhältst $${totalPayout}!` : 'Verloren. Versuch es erneut!';
         
         if (win) {
             user.balance += totalPayout;
@@ -346,13 +348,13 @@ exports.playSlots = async (req, res) => {
             grid,
             win,
             payout: totalPayout,
-            winningLineDetails, // Sendet die Koordinaten aller Gewinn-Cluster
+            winningLineDetails,
             message,
             newBalance: user.balance
         });
 
     } catch (err) {
-        console.error("Slot Machine Error:", err);
+        console.error(err);
         res.status(500).json({ success: false, error: 'Spin fehlgeschlagen.' });
     }
 };
