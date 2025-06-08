@@ -251,12 +251,6 @@ exports.playerAction = async (req, res) => {
 };
 
 // Zeigt die Slot-Machine-Seite an
-exports.showSlots = (req, res) => {
-    res.render('slots', { 
-        user: req.user,
-    });
-};
-
 exports.playSlots = async (req, res) => {
     const symbols = ['🍒', '🍋', '🍊', '🔔', '🍉', '⭐', '💎'];
     const numReels = 5;
@@ -275,28 +269,28 @@ exports.playSlots = async (req, res) => {
 
     // Erweiterte Gewinnlinien: horizontal, vertikal und Diagonalen
     const paylines = [
-    // 3 Horizontale Linien (Länge 5)
-    [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]],
-    [[0, 1], [1, 1], [2, 1], [3, 1], [4, 1]],
-    [[0, 2], [1, 2], [2, 2], [3, 2], [4, 2]],
+        // 3 Horizontale Linien (Länge 5)
+        [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]],
+        [[0, 1], [1, 1], [2, 1], [3, 1], [4, 1]],
+        [[0, 2], [1, 2], [2, 2], [3, 2], [4, 2]],
 
-    // 5 Vertikale Linien (Länge 3)
-    [[0, 0], [0, 1], [0, 2]],
-    [[1, 0], [1, 1], [1, 2]],
-    [[2, 0], [2, 1], [2, 2]],
-    [[3, 0], [3, 1], [3, 2]],
-    [[4, 0], [4, 1], [4, 2]],
+        // 5 Vertikale Linien (Länge 3)
+        [[0, 0], [0, 1], [0, 2]],
+        [[1, 0], [1, 1], [1, 2]],
+        [[2, 0], [2, 1], [2, 2]],
+        [[3, 0], [3, 1], [3, 2]],
+        [[4, 0], [4, 1], [4, 2]],
 
-    // 2 Lange Diagonale Linien (Länge 5)
-    [[0, 0], [1, 1], [2, 2], [3, 1], [4, 0]],
-    [[0, 2], [1, 1], [2, 0], [3, 1], [4, 2]],
+        // 2 Lange Diagonale Linien (Länge 5)
+        [[0, 0], [1, 1], [2, 2], [3, 1], [4, 0]],
+        [[0, 2], [1, 1], [2, 0], [3, 1], [4, 2]],
 
-    // *** NEUE ZICK-ZACK-LINIEN ***
-    [[0, 0], [1, 1], [2, 0], [3, 1], [4, 0]], // W-Form oben
-    [[0, 2], [1, 1], [2, 2], [3, 1], [4, 2]], // M-Form unten
-    [[0, 1], [1, 0], [2, 0], [3, 0], [4, 1]], // Brücke oben
-    [[0, 1], [1, 2], [2, 2], [3, 2], [4, 1]], // Brücke unten
-];
+        // Zick-Zack-Linien
+        [[0, 0], [1, 1], [2, 0], [3, 1], [4, 0]], // W-Form oben
+        [[0, 2], [1, 1], [2, 2], [3, 1], [4, 2]], // M-Form unten
+        [[0, 1], [1, 0], [2, 0], [3, 0], [4, 1]], // Brücke oben
+        [[0, 1], [1, 2], [2, 2], [3, 2], [4, 1]], // Brücke unten
+    ];
 
     try {
         const { amount } = req.body;
@@ -320,17 +314,29 @@ exports.playSlots = async (req, res) => {
         let totalPayout = 0;
         const winningLineDetails = [];
 
+        // *** FIXED WIN LOGIC ***
         for (const line of paylines) {
+            // Get the first symbol of the line from the leftmost reel
             const firstSymbol = grid[line[0][0]][line[0][1]];
-            const isWin = line.every(coord => grid[coord[0]][coord[1]] === firstSymbol);
+            let matchCount = 0;
 
-            if (isWin) {
-                const matchCount = line.length;
-                const payoutMultiplier = payoutTable[firstSymbol][matchCount];
+            // Count how many symbols match consecutively from the left
+            for (const coord of line) {
+                if (grid[coord[0]][coord[1]] === firstSymbol) {
+                    matchCount++;
+                } else {
+                    break; // Stop counting as soon as a different symbol is found
+                }
+            }
+
+            // If we have 3 or more matching symbols from the left, it's a win
+            if (matchCount >= 3) {
+                const payoutMultiplier = payoutTable[firstSymbol]?.[matchCount];
 
                 if (payoutMultiplier) {
                     totalPayout += betAmount * payoutMultiplier;
-                    winningLineDetails.push(line);
+                    // Add the winning part of the line for highlighting
+                    winningLineDetails.push(line.slice(0, matchCount));
                 }
             }
         }
